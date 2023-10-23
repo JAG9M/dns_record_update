@@ -1,0 +1,29 @@
+pipeline{
+    agent any
+    parameters {
+        string(name: 'DomainName', description: 'Enter the Domain Name')
+        string(name: 'RecordName', description: 'Enter the Record Name')
+        string(name: 'RecordType', description: 'Enter the Record Type')
+        string(name: 'TTL', description: 'Enter the TTL')
+        string(name: 'RecordValue', description: 'Enter the new RecordValue')
+    }
+    environment {
+        GIT_SSH_COMMAND = "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+    }
+    stages {
+        stage ('Checkout SCM') {
+            steps {
+                checkout([$class: 'GitSCM', 
+                          branches: [[name: '*/master']], 
+                          doGenerateSubmoduleConfigurations: false, 
+                          extensions: [[$class: 'CleanBeforeCheckout', deleteUntrackedNestedRepositories: false]], 
+                          userRemoteConfigs: [[url: 'YOUR_GIT_REPO_URL']]])
+            }
+        }
+        stage ('Update DNS') {
+            steps {
+                sh "python3 terraformIAM/update.py ${DomainName} ${RecordName} ${RecordType} ${RecordValue} ${TTL}" 
+            }
+        }
+    }
+ }
